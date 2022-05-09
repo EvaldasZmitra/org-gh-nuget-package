@@ -89,7 +89,7 @@ runs:
     - name: Athenticate For Push
       run: dotnet nuget update source github \
         --username ${{ env.name }} \
-        --password ${{ secrets.GITHUB_TOKEN }} \
+        --password ${{ env.gh-token }} \
         --store-password-in-clear-text
       shell: bash
 
