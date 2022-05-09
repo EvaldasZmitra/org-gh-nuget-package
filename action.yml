@@ -41,10 +41,10 @@ runs:
         dotnet-version: 7.0.100-preview.3.22179.4
 
     - name: Athenticate
-      run: dotnet nuget add source \
-        --username ${{ inputs.owner }} \
-        --password ${{ inputs.owner-pat }} \
-        --store-password-in-clear-text \
+      run: dotnet nuget add source
+        --username ${{ inputs.owner }}
+        --password ${{ inputs.owner-pat }}
+        --store-password-in-clear-text
         --name github "https://nuget.pkg.github.com/${{ inputs.owner }}/index.json"
       shell: bash
 
@@ -57,10 +57,10 @@ runs:
       shell: bash
 
     - name: Test
-      run: dotnet test \
-        -c ${{ inputs.config }} \
-        --no-build \
-        --collect:"XPlat Code Coverage" \
+      run: dotnet test
+        -c ${{ inputs.config }}
+        --no-build
+        --collect:"XPlat Code Coverage"
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
       shell: bash
 
@@ -79,23 +79,23 @@ runs:
       shell: bash
 
     - name: Package
-      run: dotnet pack \
-        -c ${{ inputs.config }} \
-        --no-build \
-        -o out \
+      run: dotnet pack
+        -c ${{ inputs.config }}
+        --no-build
+        -o out
         -p:PackageVersion=${{steps.get-version.outputs.version}}
       shell: bash
 
     - name: Athenticate For Push
-      run: dotnet nuget update source github \
-        --username ${{ inputs.name }} \
-        --password ${{ inputs.gh-token }} \
+      run: dotnet nuget update source github
+        --username ${{ inputs.name }}
+        --password ${{ inputs.gh-token }}
         --store-password-in-clear-text
       shell: bash
 
     - name: Publish
-      run: dotnet nuget push \
-        --skip-duplicate \
-        "out/${{ inputs.name }}.${{steps.get-version.outputs.version}}.nupkg" \
+      run: dotnet nuget push
+        --skip-duplicate
+        "out/${{ inputs.name }}.${{steps.get-version.outputs.version}}.nupkg"
         -s github
       shell: bash
