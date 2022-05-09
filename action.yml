@@ -1,0 +1,89 @@
+name: 'DotnetGithubLib'
+description: 'Build, test, coverage, publish nuget.'
+
+inputs:
+  name:
+    required: true
+    description: 'Name of C# project.'
+  owner:
+    required: true
+    description: 'Owner of the repo'
+  owner-pat:
+    required: true
+    description: 'PAT for reading nuget packages in owner.'
+  codecov-key:
+    description: 'Key for uploading codecov reports.'
+    required: true
+  dotnet-version:
+    required: false
+    default: 7.0.100-preview.3.22179.4
+  config:
+    required: false
+    description: 'Release or debug other config name for MSBuild.'
+    default: Release
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v3
+
+    - uses: kzrnm/get-net-sdk-project-versions-action@v1
+      id: get-version
+      with:
+        proj-path: ${{ env.name }}/${{ env.name }}.csproj
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.0.100-preview.3.22179.4
+
+    - name: Athenticate
+      run: dotnet nuget add source \
+        --username ${{ env.owner }} \
+        --password ${{ secrets.owner-pat }} \
+        --store-password-in-clear-text \
+        --name github "https://nuget.pkg.github.com/${{ env.owner }}/index.json"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build -c ${{ env.config }} --no-restore
+
+    - name: Test
+      run: dotnet test \
+        -c ${{ env.config }} \
+        --no-build \
+        --collect:"XPlat Code Coverage" \
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    - name: ChangeDir
+      run: cd ${{ env.name }}.Tests/TestResults && cd $(ls -d */|head -n 1)
+
+    - name: Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        token: ${{ env.codecov-key }}
+        file: coverage.opencover.xml
+
+    - name: ChangeDir
+      run: cd ../../..
+
+    - name: Package
+      run: dotnet pack \
+        -c ${{ env.config }} \
+        --no-build \
+        -o out \
+        -p:PackageVersion=${{steps.get-version.outputs.version}}
+
+    - name: Athenticate For Push
+      run: dotnet nuget update source github \
+        --username ${{ env.name }} \
+        --password ${{ secrets.GITHUB_TOKEN }} \
+        --store-password-in-clear-text
+
+    - name: Publish
+      run: dotnet nuget push \
+        --skip-duplicate \
+        "out/${{ env.name }}.${{steps.get-version.outputs.version}}.nupkg" \
+        -s github
