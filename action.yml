@@ -33,7 +33,7 @@ runs:
     - uses: kzrnm/get-net-sdk-project-versions-action@v1
       id: get-version
       with:
-        proj-path: ${{ env.name }}/${{ env.name }}.csproj
+        proj-path: ${{ inputs.name }}/${{ inputs.name }}.csproj
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
@@ -42,10 +42,10 @@ runs:
 
     - name: Athenticate
       run: dotnet nuget add source \
-        --username ${{ env.owner }} \
-        --password ${{ env.owner-pat }} \
+        --username ${{ inputs.owner }} \
+        --password ${{ inputs.owner-pat }} \
         --store-password-in-clear-text \
-        --name github "https://nuget.pkg.github.com/${{ env.owner }}/index.json"
+        --name github "https://nuget.pkg.github.com/${{ inputs.owner }}/index.json"
       shell: bash
 
     - name: Restore dependencies
@@ -53,25 +53,25 @@ runs:
       shell: bash
 
     - name: Build
-      run: dotnet build -c ${{ env.config }} --no-restore
+      run: dotnet build -c ${{ inputs.config }} --no-restore
       shell: bash
 
     - name: Test
       run: dotnet test \
-        -c ${{ env.config }} \
+        -c ${{ inputs.config }} \
         --no-build \
         --collect:"XPlat Code Coverage" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
       shell: bash
 
     - name: ChangeDir
-      run: cd ${{ env.name }}.Tests/TestResults && cd $(ls -d */|head -n 1)
+      run: cd ${{ inputs.name }}.Tests/TestResults && cd $(ls -d */|head -n 1)
       shell: bash
 
     - name: Codecov
       uses: codecov/codecov-action@v2
       with:
-        token: ${{ env.codecov-key }}
+        token: ${{ inputs.codecov-key }}
         file: coverage.opencover.xml
 
     - name: ChangeDir
@@ -80,7 +80,7 @@ runs:
 
     - name: Package
       run: dotnet pack \
-        -c ${{ env.config }} \
+        -c ${{ inputs.config }} \
         --no-build \
         -o out \
         -p:PackageVersion=${{steps.get-version.outputs.version}}
@@ -88,14 +88,14 @@ runs:
 
     - name: Athenticate For Push
       run: dotnet nuget update source github \
-        --username ${{ env.name }} \
-        --password ${{ env.gh-token }} \
+        --username ${{ inputs.name }} \
+        --password ${{ inputs.gh-token }} \
         --store-password-in-clear-text
       shell: bash
 
     - name: Publish
       run: dotnet nuget push \
         --skip-duplicate \
-        "out/${{ env.name }}.${{steps.get-version.outputs.version}}.nupkg" \
+        "out/${{ inputs.name }}.${{steps.get-version.outputs.version}}.nupkg" \
         -s github
       shell: bash
