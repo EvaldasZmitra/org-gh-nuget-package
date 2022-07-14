@@ -29,11 +29,10 @@ runs:
   using: 'composite'
   steps:
     - uses: actions/checkout@v3
-
-    - uses: kzrnm/get-net-sdk-project-versions-action@v1
-      id: get-version
       with:
-        proj-path: ${{ inputs.name }}/${{ inputs.name }}.csproj
+        fetch-depth: 0
+    - uses: paulhatch/semantic-version@v4.0.2
+      id: get-version
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
